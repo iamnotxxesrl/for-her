@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For My Dearest Orchred ❤️</title>
+    <!-- Tailwind CSS CDN for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a more personal touch */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Enhanced background gradient for a more dreamy feel */
+            background-image: linear-gradient(135deg, #fce7f3 0%, #ffc0cb 50%, #ffe4e6 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden; /* Hide overflow for popping/floating hearts animation */
+            cursor: pointer; /* Indicate clickability */
+            position: relative; /* For z-index of floating hearts */
+        }
+
+        /* Canvas for interactive particle background */
+        #particleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0; /* Behind everything else */
+            pointer-events: none; /* Allow clicks to pass through to body */
+        }
+
+        /* Removed .floating-lyrics-container and .floating-lyric styles */
+
+        .container {
+            /* Changed background-image for 50% transparent gradient */
+            background-image: linear-gradient(to bottom right, rgba(255, 228, 230, 0.5), rgba(255, 182, 193, 0.5)); /* Pink to light pink gradient, 50% transparent */
+            border-radius: 25px; /* Even more rounded corners */
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); /* Softer, larger shadow */
+            padding: 40px; /* More padding */
+            max-width: 650px; /* Slightly wider */
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 1.5s ease-out; /* Fade-in animation */
+            position: relative; /* For z-index of hearts and intro message positioning */
+            z-index: 10; /* Ensure content is above hearts */
+            min-height: 450px; /* Ensure container has some height even when letter is hidden */
+            display: flex; /* Use flexbox for centering content */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid rgba(255, 255, 255, 0.5); /* Subtle white border */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .heart-icon {
+            font-size: 5.5rem; /* Even larger heart icon */
+            color: #ec4899; /* Pink color for the heart */
+            margin-bottom: 25px;
+            animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1); /* Smoother pulse */
+            text-shadow: 0 0 15px rgba(236, 72, 153, 0.5), 0 0 30px rgba(236, 72, 153, 0.2); /* More glow */
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); } /* More pronounced pulse */
+            100% { transform: scale(1); }
+        }
+        h1 {
+            color: #be185d; /* Darker pink for heading */
+            font-weight: 700;
+            margin-bottom: 20px; /* More spacing */
+            font-size: 2.5rem; /* Larger heading */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.05); /* Subtle text shadow */
+        }
+        p {
+            color: #4a5568; /* Grey for text */
+            line-height: 1.7; /* Slightly more line spacing */
+            margin-bottom: 25px; /* More spacing */
+            font-size: 1.05rem; /* Slightly larger text */
+            opacity: 0; /* Initially hidden for fade-in effect */
+            /* Animation for text will be handled by JS for typewriter effect */
+        }
+        .signature {
+            font-family: 'Great Vibes', cursive; /* Elegant script font for signature */
+            font-size: 2.2rem; /* Larger signature */
+            color: #d82c7a; /* Stronger pink for signature */
+            margin-top: 30px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            opacity: 0; /* Initially hidden for fade-in effect */
+            /* Animation for signature will be handled by JS for typewriter effect */
+        }
+
+        /* Delay for paragraphs to fade in sequentially */
+        /* These are overridden by JS for typewriter effect, but kept for fallback */
+        #letterContent p:nth-of-type(1) { animation-delay: 0.2s; }
+        #letterContent p:nth-of-type(2) { animation-delay: 0.4s; }
+        #letterContent p:nth-of-type(3) { animation-delay: 0.6s; }
+
+        @keyframes textFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Style for the popping hearts */
+        .popping-heart {
+            position: absolute;
+            font-size: clamp(1.8rem, 3.5vw, 3.5rem); /* Responsive size for popping hearts */
+            color: #ff69b4; /* Hot pink color for popping hearts */
+            pointer-events: none; /* Allow clicks to pass through */
+            animation: popAndFade 2s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smoother animation */
+            z-index: 1; /* Ensure hearts are behind the main content but within container */
+            opacity: 0; /* Start hidden */
+            transform: scale(0); /* Start very small */
+            text-shadow: 0 0 8px rgba(255, 105, 180, 0.7); /* Soft glow for popping hearts */
+        }
+
+        @keyframes popAndFade {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.3); /* Slightly larger pop */
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -180px) scale(0.9) rotate(calc(var(--random-rotation) * 1deg)); /* Add random rotation */
+            }
+        }
+
+        /* Styles for the intro message overlay */
+        #introMessage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            /* Changed background-image for 50% transparent gradient to match container */
+            background-image: linear-gradient(to bottom right, rgba(255, 228, 230, 0.5), rgba(255, 182, 193, 0.5)); /* Pink to light pink gradient, 50% transparent */
+            border-radius: 25px; /* Match container border-radius */
+            cursor: pointer;
+            z-index: 20; /* Ensure it's on top of other content */
+            opacity: 1;
+            transition: opacity 0.7s ease-out; /* Slower fade out */
+            border: 2px solid rgba(255, 255, 255, 0.5); /* Subtle white border */
+        }
+        #introMessage.fade-out {
+            opacity: 0;
+            pointer-events: none; /* Disable clicks after fade out */
+        }
+        #introMessage .envelope-icon {
+            font-size: 7rem; /* Larger envelope icon */
+            margin-bottom: 1.5rem;
+            animation: bounce 1.5s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smoother bounce */
+            text-shadow: 0 5px 15px rgba(0,0,0,0.1); /* Shadow for envelope */
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-20px); /* More bounce */
+            }
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+        #introMessage p {
+            color: #d82c7a; /* Stronger pink for intro text */
+            font-weight: 600;
+            font-size: 1.3rem; /* Larger intro text */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+        }
+
+        /* New style for music prompt */
+        #musicPrompt {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            color: #be185d;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            opacity: 0; /* Start hidden */
+            transition: opacity 0.5s ease-in-out;
+            pointer-events: none; /* Allow clicks to pass through */
+            z-index: 15; /* Above floating hearts, below intro message */
+        }
+        #musicPrompt.show {
+            opacity: 1;
+            pointer-events: auto; /* Enable clicks when shown */
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas for the interactive particle background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Removed Floating Lyrics Background -->
+
+    <div class="container">
+        <!-- Initial message to click to open -->
+        <div id="introMessage">
+            <span class="envelope-icon">💌</span>
+            <p class="text-xl sm:text-2xl font-semibold">Click to Open Your Special Letter!</p>
+        </div>
+
+        <!-- Main letter content, initially hidden -->
+        <div id="letterContent" style="display: none;">
+            <!-- Heart icon for a sweet touch -->
+            <div class="heart-icon">❤️</div>
+            
+            <!-- Main heading -->
+            <h1 class="text-3xl sm:text-4xl">To My Dearest Orchred,</h1>
+            
+            <!-- The letter content - now broken into spans for typewriter effect -->
+            <p class="text-base sm:text-lg letter-paragraph" data-text="My dearest Orchred, it's hard to truly capture in words just how much you mean to me. Every single day with you feels like a blessing, a vibrant splash of joy and comfort in my world. Your laughter is my favorite sound, and your warmth is the peace I always seek. I find myself constantly grateful for the beautiful journey we're on, for every shared glance, every quiet moment, and every big adventure we embark on together."></p>
+            <p class="text-base sm:text-lg letter-paragraph" data-text="I've spent a lot of time reflecting on our moments, trying to find the perfect way to express the depth of my feelings, something that truly captures even a fraction of the happiness you bring into my life. I think of your beautiful blue eyes, one side with that unique, slight brown heterochromia, and your lovely dirty blond hair – details that make you uniquely captivating. This little website, crafted with so much thought and care, is my heartfelt attempt to do just that – a small space dedicated entirely to you."></p>
+            <p class="text-base sm:text-lg letter-paragraph" data-text="I hope it brings a radiant smile to your beautiful face, a gentle reminder of how deeply loved, cherished, and absolutely wonderful you are, every single day."></p>
+            
+            <!-- Signature -->
+            <p class="signature text-sm sm:text-base signature-text" data-text="Your loving partner, Andy"></p>
+        </div>
+
+        <!-- Audio player for the song -->
+        <audio id="myAudio" autoplay loop>
+            <source src="https://files.catbox.moe/d7s0fl.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <!-- Music prompt if autoplay fails -->
+    <div id="musicPrompt">
+        Tap to play music 🎵
+    </div>
+
+    <script>
+        // --- Global Variables ---
+        const audio = document.getElementById('myAudio');
+        const introMessage = document.getElementById('introMessage');
+        const letterContent = document.getElementById('letterContent');
+        const container = document.querySelector('.container');
+        const musicPrompt = document.getElementById('musicPrompt');
+        const letterParagraphs = document.querySelectorAll('.letter-paragraph');
+        const signatureText = document.querySelector('.signature-text');
+        const particleCanvas = document.getElementById('particleCanvas');
+        const ctx = particleCanvas.getContext('2d');
+
+        let letterOpened = false;
+        let musicPlayedAttempted = false;
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+
+        // --- Particle Background Animation ---
+        const particles = [];
+        const numParticles = 100; // Number of particles
+        const particleColor = '#FFC0CB'; // Light pink for particles
+        const particleSize = 1.5; // Base size of particles
+        const particleSpeed = 0.5; // Base speed of particles
+        const repulsionRadius = 100; // Mouse repulsion radius
+        const repulsionStrength = 0.05; // How strongly particles are repelled
+
+        // Particle constructor
+        function Particle(x, y) {
+            this.x = x;
+            this.y = y;
+            this.vx = (Math.random() - 0.5) * particleSpeed;
+            this.vy = (Math.random() - 0.5) * particleSpeed;
+            this.size = Math.random() * particleSize + 0.5;
+            this.opacity = Math.random() * 0.5 + 0.3; // Vary opacity
+            this.life = 0; // For fading in/out
+            this.maxLife = 200; // How long a particle lives
+        }
+
+        // Draw a single particle
+        Particle.prototype.draw = function() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 192, 203, ${this.opacity})`; // Pink color with opacity
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = `rgba(255, 192, 203, ${this.opacity * 0.8})`;
+            ctx.fill();
+        };
+
+        // Update particle position and properties
+        Particle.prototype.update = function() {
+            // Apply mouse repulsion
+            const dx = this.x - mouseX;
+            const dy = this.y - mouseY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < repulsionRadius) {
+                const force = repulsionStrength * (repulsionRadius - distance) / repulsionRadius;
+                this.vx += dx * force;
+                this.vy += dy * force;
+            }
+
+            this.x += this.vx;
+            this.y += this.vy;
+            this.life++;
+
+            // Fade out as particle ages
+            this.opacity = (1 - (this.life / this.maxLife)) * (Math.random() * 0.5 + 0.3);
+
+            // Respawn if out of bounds or life is over
+            if (this.x < -this.size || this.x > particleCanvas.width + this.size ||
+                this.y < -this.size || this.y > particleCanvas.height + this.size ||
+                this.life >= this.maxLife) {
+                this.x = Math.random() * particleCanvas.width;
+                this.y = particleCanvas.height + this.size; // Respawn from bottom
+                this.vx = (Math.random() - 0.5) * particleSpeed * 2; // Vary x velocity
+                this.vy = -Math.random() * particleSpeed - 0.1; // Always move up
+                this.size = Math.random() * particleSize + 0.5;
+                this.opacity = Math.random() * 0.5 + 0.3;
+                this.life = 0;
+            }
+        };
+
+        // Initialize particles
+        function initParticles() {
+            for (let i = 0; i < numParticles; i++) {
+                particles.push(new Particle(Math.random() * particleCanvas.width, Math.random() * particleCanvas.height));
+            }
+        }
+
+        // Animation loop for particles
+        function animateParticles() {
+            ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height); // Clear canvas
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+            }
+            requestAnimationFrame(animateParticles);
+        }
+
+        // Resize canvas to fit window
+        function resizeCanvas() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+        }
+
+        // Event listener for mouse movement to affect particles
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        // Initialize and start particle animation on window load
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            initParticles();
+            animateParticles();
+        });
+        window.addEventListener('resize', resizeCanvas);
+
+
+        // --- Audio Playback Logic ---
+        function tryPlayMusic() {
+            if (musicPlayedAttempted) return; // Only attempt once after first click
+            musicPlayedAttempted = true;
+
+            audio.currentTime = 16; // Set start time to 16 seconds
+            audio.volume = 0;       // Start volume at 0 for fade-in
+
+            audio.play().then(() => {
+                let volume = 0;
+                const fadeInterval = setInterval(() => {
+                    if (volume < 1) {
+                        volume += 0.02; // Increase volume gradually (adjust value for faster/slower fade)
+                        if (volume > 1) volume = 1; // Cap at 1
+                        audio.volume = volume;
+                    } else {
+                        clearInterval(fadeInterval); // Stop fading when max volume reached
+                    }
+                }, 50); // Interval in milliseconds (adjust for smoother fade)
+                musicPrompt.classList.remove('show'); // Hide prompt if successful
+            }).catch(error => {
+                console.log("Autoplay was prevented or failed during fade-in attempt.", error);
+                // Show prompt if autoplay fails
+                musicPrompt.classList.add('show');
+            });
+        }
+
+        // --- Typewriter Effect for Letter Content ---
+        async function typeWriterEffect(element, text, delay = 50) {
+            element.innerHTML = ''; // Clear content
+            element.style.opacity = 1; // Make sure element is visible
+            for (let i = 0; i < text.length; i++) {
+                element.innerHTML += text.charAt(i);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+
+        async function revealLetterContent() {
+            // Type out each paragraph
+            for (let i = 0; i < letterParagraphs.length; i++) {
+                const p = letterParagraphs[i];
+                const originalText = p.getAttribute('data-text');
+                await typeWriterEffect(p, originalText, 30); // Adjust typing speed here
+                // Add a small pause between paragraphs
+                if (i < letterParagraphs.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+            // Type out the signature
+            const signatureOriginalText = signatureText.getAttribute('data-text');
+            await typeWriterEffect(signatureText, signatureOriginalText, 70); // Slower for signature
+        }
+
+        // --- Event Listener for Page Interaction ---
+        document.body.addEventListener('click', function(event) {
+            if (!letterOpened) {
+                // This is the first click to open the letter and play music
+                introMessage.classList.add('fade-out'); // Start fade-out animation
+                introMessage.addEventListener('transitionend', () => {
+                    introMessage.style.display = 'none'; // Hide after fade
+                }, { once: true }); // Ensure this listener runs only once
+
+                letterContent.style.display = 'block'; // Show letter content container
+                
+                tryPlayMusic(); // Attempt to play music on first interaction
+                revealLetterContent(); // Start typewriter effect
+                letterOpened = true; // Set flag to true after opening
+            } else if (event.target === musicPrompt) {
+                // If the music prompt itself is clicked, try playing music again
+                tryPlayMusic();
+            }
+
+            // Heart popping logic
+            // Only create heart if click is within the container's bounds
+            const containerRect = container.getBoundingClientRect();
+            const clickX = event.clientX;
+            const clickY = event.clientY;
+
+            if (clickX >= containerRect.left && clickX <= containerRect.right &&
+                clickY >= containerRect.top && clickY <= containerRect.bottom) {
+
+                const heart = document.createElement('span');
+                heart.classList.add('popping-heart');
+                heart.textContent = '❤️'; // Heart emoji
+                
+                // Set a random rotation for the popping heart
+                heart.style.setProperty('--random-rotation', Math.random() * 360 - 180); // -180 to 180 degrees
+
+                // Position relative to the container's top-left corner
+                heart.style.left = `${clickX - containerRect.left}px`;
+                heart.style.top = `${clickY - containerRect.top}px`;
+
+                container.appendChild(heart); // Append to the container
+
+                // Remove the heart after its animation completes
+                heart.addEventListener('animationend', () => {
+                    heart.remove();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
