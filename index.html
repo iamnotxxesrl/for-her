@@ -20,9 +20,13 @@
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
-            overflow: hidden; /* Hide overflow for popping/floating hearts animation */
             cursor: pointer; /* Indicate clickability */
             position: relative; /* For z-index of floating hearts */
+            transition: filter 1s ease-in-out; /* Smooth transition for grayscale */
+        }
+
+        body.broken {
+            filter: grayscale(100%);
         }
 
         /* Canvas for interactive particle background */
@@ -35,8 +39,6 @@
             z-index: 0; /* Behind everything else */
             pointer-events: none; /* Allow clicks to pass through to body */
         }
-
-        /* Removed .floating-lyrics-container and .floating-lyric styles */
 
         .container {
             /* Changed background-image for 50% transparent gradient */
@@ -56,7 +58,15 @@
             justify-content: center;
             align-items: center;
             border: 2px solid rgba(255, 255, 255, 0.5); /* Subtle white border */
+            transition: transform 1s ease-out, opacity 1s ease-out; /* For breaking effect */
         }
+
+        .container.shatter {
+            transform: scale(0.8) translateY(50px);
+            opacity: 0.3;
+            filter: blur(5px);
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -97,12 +107,6 @@
             opacity: 0; /* Initially hidden for fade-in effect */
             /* Animation for signature will be handled by JS for typewriter effect */
         }
-
-        /* Delay for paragraphs to fade in sequentially */
-        /* These are overridden by JS for typewriter effect, but kept for fallback */
-        #letterContent p:nth-of-type(1) { animation-delay: 0.2s; }
-        #letterContent p:nth-of-type(2) { animation-delay: 0.4s; }
-        #letterContent p:nth-of-type(3) { animation-delay: 0.6s; }
 
         @keyframes textFadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -207,13 +211,94 @@
             opacity: 1;
             pointer-events: auto; /* Enable clicks when shown */
         }
+
+        /* Proposal Section Styles */
+        #proposalSection {
+            display: none; /* Hidden by default */
+            margin-top: 30px;
+            animation: fadeIn 1s ease-out forwards;
+        }
+
+        #proposalSection h2 {
+            font-family: 'Great Vibes', cursive;
+            font-size: 3rem;
+            color: #be185d;
+            margin-bottom: 25px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.08);
+        }
+
+        #proposalSection .proposal-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        #proposalSection button {
+            background-color: #ec4899; /* Pink button */
+            color: white;
+            padding: 12px 30px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
+
+        #proposalSection button:hover {
+            background-color: #d82c7a; /* Darker pink on hover */
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        #proposalSection button:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Removed #noMessage as it's now on result page */
+
+        /* Heart Explosion styles */
+        .heart-explosion {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 50; /* Above container, below proposal */
+        }
+
+        .explosion-heart {
+            position: absolute;
+            font-size: clamp(3rem, 8vw, 10rem); /* Large, responsive hearts */
+            color: #ff007f; /* Vibrant pink */
+            opacity: 0;
+            animation: explodeHeart 1.5s forwards ease-out;
+            text-shadow: 0 0 20px rgba(255, 0, 127, 0.7);
+        }
+
+        @keyframes explodeHeart {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.1);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(calc(var(--end-x) * 1px), calc(var(--end-y) * 1px)) scale(0.5) rotate(calc(var(--random-rotation) * 1deg));
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Canvas for the interactive particle background -->
     <canvas id="particleCanvas"></canvas>
-
-    <!-- Removed Floating Lyrics Background -->
 
     <div class="container">
         <!-- Initial message to click to open -->
@@ -237,6 +322,15 @@
             
             <!-- Signature -->
             <p class="signature text-sm sm:text-base signature-text" data-text="Your loving partner, Andy"></p>
+
+            <!-- Proposal Section - Initially hidden -->
+            <div id="proposalSection">
+                <h2>Will you marry me, my love?</h2>
+                <div class="proposal-buttons">
+                    <button id="yesButton">Yes! ❤️</button>
+                    <button id="noButton">No 💔</button>
+                </div>
+            </div>
         </div>
 
         <!-- Audio player for the song -->
@@ -251,6 +345,9 @@
         Tap to play music 🎵
     </div>
 
+    <!-- Heart Explosion Container -->
+    <div id="heartExplosionContainer" class="heart-explosion"></div>
+
     <script>
         // --- Global Variables ---
         const audio = document.getElementById('myAudio');
@@ -262,11 +359,16 @@
         const signatureText = document.querySelector('.signature-text');
         const particleCanvas = document.getElementById('particleCanvas');
         const ctx = particleCanvas.getContext('2d');
+        const proposalSection = document.getElementById('proposalSection');
+        const yesButton = document.getElementById('yesButton');
+        const noButton = document.getElementById('noButton');
+        const heartExplosionContainer = document.getElementById('heartExplosionContainer');
 
         let letterOpened = false;
         let musicPlayedAttempted = false;
         let mouseX = window.innerWidth / 2;
         let mouseY = window.innerHeight / 2;
+        let particleAnimationId = null; // To store requestAnimationFrame ID for particles
 
         // --- Particle Background Animation ---
         const particles = [];
@@ -347,7 +449,15 @@
                 particles[i].update();
                 particles[i].draw();
             }
-            requestAnimationFrame(animateParticles);
+            particleAnimationId = requestAnimationFrame(animateParticles);
+        }
+
+        // Stop particle animation
+        function stopParticleAnimation() {
+            if (particleAnimationId) {
+                cancelAnimationFrame(particleAnimationId);
+                particleAnimationId = null;
+            }
         }
 
         // Resize canvas to fit window
@@ -422,6 +532,39 @@
             // Type out the signature
             const signatureOriginalText = signatureText.getAttribute('data-text');
             await typeWriterEffect(signatureText, signatureOriginalText, 70); // Slower for signature
+
+            // After letter is fully typed, show the proposal section
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay before proposal
+            proposalSection.style.display = 'block';
+        }
+
+        // --- Heart Explosion Effect ---
+        function triggerHeartExplosion() {
+            for (let i = 0; i < 50; i++) { // Generate 50 hearts
+                const heart = document.createElement('span');
+                heart.classList.add('explosion-heart');
+                heart.textContent = '❤️';
+
+                // Random starting position (around center of screen)
+                const startX = window.innerWidth / 2 + (Math.random() - 0.5) * 200;
+                const startY = window.innerHeight / 2 + (Math.random() - 0.5) * 200;
+                heart.style.left = `${startX}px`;
+                heart.style.top = `${startY}px`;
+
+                // Random end position
+                const endX = startX + (Math.random() - 0.5) * window.innerWidth * 0.8;
+                const endY = startY + (Math.random() - 0.5) * window.innerHeight * 0.8;
+
+                heart.style.setProperty('--end-x', endX - startX);
+                heart.style.setProperty('--end-y', endY - startY);
+                heart.style.setProperty('--random-rotation', Math.random() * 720 - 360); // Full rotation
+
+                heartExplosionContainer.appendChild(heart);
+
+                heart.addEventListener('animationend', () => {
+                    heart.remove();
+                });
+            }
         }
 
         // --- Event Listener for Page Interaction ---
@@ -441,36 +584,97 @@
             } else if (event.target === musicPrompt) {
                 // If the music prompt itself is clicked, try playing music again
                 tryPlayMusic();
-            }
+            } else if (letterOpened && proposalSection.style.display !== 'block') { // Only pop hearts if letter is open and proposal isn't active
+                // Heart popping logic
+                // Only create heart if click is within the container's bounds
+                const containerRect = container.getBoundingClientRect();
+                const clickX = event.clientX;
+                const clickY = event.clientY;
 
-            // Heart popping logic
-            // Only create heart if click is within the container's bounds
-            const containerRect = container.getBoundingClientRect();
-            const clickX = event.clientX;
-            const clickY = event.clientY;
+                if (clickX >= containerRect.left && clickX <= containerRect.right &&
+                    clickY >= containerRect.top && clickY <= containerRect.bottom) {
 
-            if (clickX >= containerRect.left && clickX <= containerRect.right &&
-                clickY >= containerRect.top && clickY <= containerRect.bottom) {
+                    const heart = document.createElement('span');
+                    heart.classList.add('popping-heart');
+                    heart.textContent = '❤️'; // Heart emoji
+                    
+                    // Set a random rotation for the popping heart
+                    heart.style.setProperty('--random-rotation', Math.random() * 360 - 180); // -180 to 180 degrees
 
-                const heart = document.createElement('span');
-                heart.classList.add('popping-heart');
-                heart.textContent = '❤️'; // Heart emoji
-                
-                // Set a random rotation for the popping heart
-                heart.style.setProperty('--random-rotation', Math.random() * 360 - 180); // -180 to 180 degrees
+                    // Position relative to the container's top-left corner
+                    heart.style.left = `${clickX - containerRect.left}px`;
+                    heart.style.top = `${clickY - containerRect.top}px`;
 
-                // Position relative to the container's top-left corner
-                heart.style.left = `${clickX - containerRect.left}px`;
-                heart.style.top = `${clickY - containerRect.top}px`;
+                    container.appendChild(heart); // Append to the container
 
-                container.appendChild(heart); // Append to the container
-
-                // Remove the heart after its animation completes
-                heart.addEventListener('animationend', () => {
-                    heart.remove();
-                });
+                    // Remove the heart after its animation completes
+                    heart.addEventListener('animationend', () => {
+                        heart.remove();
+                    });
+                }
             }
         });
+
+        // --- Proposal Button Event Listeners ---
+        yesButton.addEventListener('click', function() {
+            proposalSection.style.display = 'none'; // Hide proposal
+            triggerHeartExplosion(); // Start heart explosion
+            // Redirect to result page after a short delay to let animation start
+            setTimeout(() => {
+                window.location.href = 'orchred-website-result.html?status=yes';
+            }, 1000); // Redirect after 1 second
+        });
+
+        noButton.addEventListener('click', function() {
+            // Stop all animations and turn grayscale
+            stopParticleAnimation();
+            audio.pause(); // Stop the music
+            audio.currentTime = 0; // Reset music
+
+            document.body.classList.add('broken'); // Apply grayscale to body
+            container.classList.add('shatter'); // Apply shatter effect to container
+            proposalSection.style.display = 'none'; // Hide proposal
+
+            // Redirect to result page after a short delay to let animation start
+            setTimeout(() => {
+                window.location.href = 'orchred-website-result.html?status=no';
+            }, 1000); // Redirect after 1 second
+        });
+
+        // Helper function to manage popping hearts, to be removed if 'no' is clicked
+        function handlePoppingHearts(event) {
+             const containerRect = container.getBoundingClientRect();
+             const clickX = event.clientX;
+             const clickY = event.clientY;
+
+             if (clickX >= containerRect.left && clickX <= containerRect.right &&
+                 clickY >= containerRect.top && clickY <= containerRect.bottom) {
+
+                 const heart = document.createElement('span');
+                 heart.classList.add('popping-heart');
+                 heart.textContent = '❤️';
+                 heart.style.setProperty('--random-rotation', Math.random() * 360 - 180);
+                 heart.style.left = `${clickX - containerRect.left}px`;
+                 heart.style.top = `${clickY - containerRect.top}px`;
+                 container.appendChild(heart);
+
+                 heart.addEventListener('animationend', () => {
+                     heart.remove();
+                 });
+             }
+        }
+        // Attach the popping hearts listener initially
+        // This listener is added to the body, but its logic checks if the click is within the container.
+        // It's removed if a proposal button is clicked.
+        document.body.addEventListener('click', handlePoppingHearts);
+
+        // Prevent other click listeners (like the popping hearts) from firing when proposal section is visible
+        // This ensures only the proposal buttons are interactive.
+        document.body.addEventListener('click', function(event) {
+            if (proposalSection.style.display === 'block' && event.target !== yesButton && event.target !== noButton) {
+                event.stopPropagation(); // Stop event propagation if proposal is visible and click is not on buttons
+            }
+        }, true); // Use capture phase to ensure it runs before other click listeners
     </script>
 </body>
 </html>
